@@ -228,6 +228,27 @@ body, html, #root {
   gap: 8px;
 }
 
+/* corner guess button */
+.corner-guess {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 9999;
+  padding: 10px 14px;
+  background: linear-gradient(90deg, #f59e0b, #f97316);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.12);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 /* Responsive layout for smaller screens */
 @media (max-width: 980px) {
   .center-wrap {

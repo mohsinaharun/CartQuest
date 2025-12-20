@@ -1,15 +1,27 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { loginUser } from "../api/auth";
 
-function LoginPage({ onSwitch }) {
+function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    const data = await loginUser({ email, password });
-    console.log("login response:", data);
-    // handle storing token / redirect after success
+    try {
+      const data = await loginUser({ email, password });
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        console.log("Login successful, token stored");
+        // Optionally redirect or show success message
+      } else if (data.message) {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login failed. Please try again.");
+    }
   };
 
   return (
@@ -44,7 +56,7 @@ function LoginPage({ onSwitch }) {
         <span>Don't have an account?</span>
         <button
           className="link-button"
-          onClick={() => onSwitch && onSwitch("register")}
+          onClick={() => navigate("/register")}
         >
           Create account
         </button>

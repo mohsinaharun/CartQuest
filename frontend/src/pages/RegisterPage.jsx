@@ -1,17 +1,29 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { registerUser } from "../api/auth";
 
-function RegisterPage({ onSwitch }) {
+function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    const data = await registerUser({ name, email, password });
-    console.log("register response:", data);
-    // optionally switch to login on success:
-    if (data && !data.error) onSwitch("login");
+    try {
+      const data = await registerUser({ name, email, password });
+      console.log("register response:", data);
+      // Navigate to login on success:
+      if (data && !data.error && !data.message?.includes("error")) {
+        alert("Registration successful! Please login.");
+        navigate("/");
+      } else if (data.message) {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert("Registration failed. Please try again.");
+    }
   };
 
   return (
@@ -55,7 +67,7 @@ function RegisterPage({ onSwitch }) {
       <div className="auth-footer">
         <button
           className="link-button"
-          onClick={() => onSwitch && onSwitch("login")}
+          onClick={() => navigate("/")}
         >
           Back to login
         </button>

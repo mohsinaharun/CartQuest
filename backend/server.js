@@ -4,25 +4,29 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+// Middleware
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.log(err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
+// Routes
 app.use("/api/auth", require("./routes/auth"));
-
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
-
-
-// Auth routes
-app.use("/api/auth", require("./routes/auth"));
-
-// Wheel routes
 app.use("/api/wheel", require("./routes/wheel"));
+app.use("/api/guess", require("./routes/guess"));
 
-app.listen(5000, () => {
-  console.log("Backend running on port 5000");
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });

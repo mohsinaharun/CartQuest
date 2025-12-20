@@ -3,6 +3,7 @@ import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import WheelPage from "./pages/WheelPage";
+import GuessPricePage from "./pages/GuessPricePage";
 import "./App.css";
 
 function Layout() {
@@ -26,6 +27,15 @@ function Layout() {
       >
         wheel
       </button>
+
+      <button
+        className="corner-guess"
+        onClick={() => navigate("/guess")}
+        aria-label="guess the price"
+        title="guess the price"
+      >
+        Guess the Price
+      </button>
     </div>
   );
 }
@@ -38,6 +48,7 @@ function App() {
           <Route index element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="wheel" element={<WheelPage />} />
+          <Route path="guess" element={<GuessPricePage />} />
         </Route>
       </Routes>
     </BrowserRouter>
