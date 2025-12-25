@@ -3,6 +3,10 @@ import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import WheelPage from "./pages/WheelPage";
+import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
+import OrderHistory from "./pages/OrderHistory";
+import MahiCoins from "./pages/MahiCoins";
 import "./App.css";
 
 function Layout() {
@@ -18,14 +22,32 @@ function Layout() {
         <Outlet />
       </div>
 
-      <button
-        className="corner-wheel"
-        onClick={() => navigate("/wheel")}
-        aria-label="wheel"
-        title="wheel"
-      >
-        wheel
-      </button>
+      <div className="corner-buttons">
+        <button
+          className="corner-wheel"
+          onClick={() => navigate("/wheel")}
+          aria-label="wheel"
+          title="wheel"
+        >
+          🎡 Wheel
+        </button>
+        <button
+          className="corner-coins"
+          onClick={() => navigate("/mahi-coins")}
+          aria-label="mahi coins"
+          title="mahi coins"
+        >
+          🪙 Coins
+        </button>
+        <button
+          className="corner-orders"
+          onClick={() => navigate("/orders")}
+          aria-label="orders"
+          title="orders"
+        >
+          📦 Orders
+        </button>
+      </div>
     </div>
   );
 }
@@ -38,6 +60,10 @@ function App() {
           <Route index element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="wheel" element={<WheelPage />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="order-success/:orderId" element={<OrderSuccess />} />
+          <Route path="orders" element={<OrderHistory />} />
+          <Route path="mahi-coins" element={<MahiCoins />} />
         </Route>
       </Routes>
     </BrowserRouter>
