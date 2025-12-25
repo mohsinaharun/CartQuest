@@ -21,12 +21,19 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => console.log(err));
 
-// Import and use routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/wheel", require("./routes/wheel"));
-app.use("/api/addresses", require("./routes/address"));
-app.use("/api/orders", require("./routes/order"));
-app.use("/api/payment", require("./routes/payment"));
+// Import routes
+const authRoutes = require('./routes/auth');
+const wheelRoutes = require('./routes/wheel');
+const addressRoutes = require('./routes/address');
+const orderRoutes = require('./routes/order');
+const paymentRoutes = require('./routes/payment');
+
+// Use routes
+app.use("/api/auth", authRoutes);
+app.use("/api/wheel", wheelRoutes);
+app.use("/api/addresses", addressRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Test route
 app.get("/", (req, res) => {
