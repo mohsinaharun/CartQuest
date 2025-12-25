@@ -3,8 +3,11 @@ const router = express.Router();
 const Order = require('../models/Order');
 const Address = require('../models/Address');
 const auth = require('../middleware/auth');
+const { awardPurchaseCoins } = require('../utils/coinSystem');
 
-// Create new order
+// @route   POST /api/orders
+// @desc    Create new order
+// @access  Private
 router.post('/', auth, async (req, res) => {
   try {
     const { items, deliveryAddressId, paymentMethod, subtotal, shippingCost, discount, orderNotes } = req.body;
@@ -47,6 +50,12 @@ router.post('/', auth, async (req, res) => {
     });
     
     const savedOrder = await order.save();
+    
+    // Award coins for purchase (award immediately for COD, or when payment is confirmed)
+    if (order.paymentMethod === 'cod') {
+      await awardPurchaseCoins(req.user.id, order.totalAmount, savedOrder._id);
+    }
+    
     await savedOrder.populate('deliveryAddress');
     
     res.status(201).json(savedOrder);
@@ -56,7 +65,9 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Get all orders for logged-in user
+// @route   GET /api/orders
+// @desc    Get all orders for logged-in user
+// @access  Private
 router.get('/', auth, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
@@ -70,7 +81,9 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Get single order by ID
+// @route   GET /api/orders/:id
+// @desc    Get single order by ID
+// @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
     const order = await Order.findOne({
@@ -89,7 +102,9 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// Update order status
+// @route   PATCH /api/orders/:id/status
+// @desc    Update order status (for admin use - you can add admin middleware)
+// @access  Private
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { orderStatus } = req.body;
@@ -115,7 +130,9 @@ router.patch('/:id/status', auth, async (req, res) => {
   }
 });
 
-// Update payment status
+// @route   PATCH /api/orders/:id/payment-status
+// @desc    Update payment status (called by payment webhooks)
+// @access  Private
 router.patch('/:id/payment-status', async (req, res) => {
   try {
     const { paymentStatus, transactionId, orderStatus } = req.body;
@@ -125,6 +142,8 @@ router.patch('/:id/payment-status', async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
+    
+    const previousPaymentStatus = order.paymentStatus;
     
     if (paymentStatus) {
       order.paymentStatus = paymentStatus;
@@ -140,6 +159,11 @@ router.patch('/:id/payment-status', async (req, res) => {
     
     await order.save();
     
+    // Award coins when payment is confirmed (for Stripe/Razorpay)
+    if (previousPaymentStatus !== 'paid' && paymentStatus === 'paid') {
+      await awardPurchaseCoins(order.userId, order.totalAmount, order._id);
+    }
+    
     res.json(order);
   } catch (error) {
     console.error('Error updating payment status:', error);
@@ -147,7 +171,9 @@ router.patch('/:id/payment-status', async (req, res) => {
   }
 });
 
-// Cancel order
+// @route   DELETE /api/orders/:id
+// @desc    Cancel order (only if status is 'processing')
+// @access  Private
 router.delete('/:id', auth, async (req, res) => {
   try {
     const order = await Order.findOne({
