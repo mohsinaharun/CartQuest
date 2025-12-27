@@ -27,8 +27,6 @@ const wheelRoutes = require('./routes/wheel');
 const addressRoutes = require('./routes/address');
 const orderRoutes = require('./routes/order');
 const paymentRoutes = require('./routes/payment');
-const coinsRoutes = require('./routes/coins');
-const referralsRoutes = require('./routes/referrals');
 
 // Use routes
 app.use("/api/auth", authRoutes);
@@ -36,8 +34,6 @@ app.use("/api/wheel", wheelRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
-app.use("/api/coins", coinsRoutes);
-app.use("/api/referrals", referralsRoutes);
 
 // Test route
 app.get("/", (req, res) => {
