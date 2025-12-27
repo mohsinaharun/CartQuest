@@ -3,6 +3,7 @@ import axios from 'axios';
 import AddressSelector from '../components/AddressSelector';
 import PaymentMethod from '../components/PaymentMethod';
 import OrderSummary from '../components/OrderSummary';
+import CoinDiscountApplier from '../components/CoinDiscountApplier';
 import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
@@ -14,6 +15,8 @@ const Checkout = () => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [coinDiscount, setCoinDiscount] = useState(0);
+  const [coinsUsed, setCoinsUsed] = useState(0);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -29,7 +32,6 @@ const Checkout = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAddresses(res.data);
-      
       const defaultAddr = res.data.find(addr => addr.isDefault);
       if (defaultAddr) {
         setSelectedAddress(defaultAddr._id);
@@ -48,17 +50,22 @@ const Checkout = () => {
   };
 
   const calculateTotal = () => {
-    const subtotal = cartItems.reduce((sum, item) => 
+    const subtotal = cartItems.reduce((sum, item) =>
       sum + (item.price * item.quantity), 0
     );
     const shippingCost = subtotal > 1000 ? 0 : 50;
-    const discount = 0;
-    return { 
-      subtotal, 
-      shippingCost, 
+    const discount = coinDiscount;
+    return {
+      subtotal,
+      shippingCost,
       discount,
-      total: subtotal + shippingCost - discount 
+      total: subtotal + shippingCost - discount
     };
+  };
+
+  const handleApplyCoinDiscount = (discountAmount, coins) => {
+    setCoinDiscount(discountAmount);
+    setCoinsUsed(coins);
   };
 
   const handlePlaceOrder = async () => {
@@ -78,7 +85,7 @@ const Checkout = () => {
     try {
       const token = localStorage.getItem('token');
       const { subtotal, shippingCost, discount } = calculateTotal();
-      
+
       const orderData = {
         items: cartItems.map(item => ({
           productId: item._id || item.id,
@@ -120,20 +127,18 @@ const Checkout = () => {
   const handleStripePayment = async (order) => {
     try {
       const token = localStorage.getItem('token');
-      
       const res = await axios.post(`${API_URL}/api/payment/create-payment-intent`, {
         amount: order.totalAmount,
         orderId: order._id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       const stripe = await stripePromise;
-      
       const { error } = await stripe.redirectToCheckout({
         sessionId: res.data.sessionId
       });
-      
+
       if (error) {
         setError('Payment failed: ' + error.message);
       }
@@ -146,14 +151,13 @@ const Checkout = () => {
   const handleRazorpayPayment = async (order) => {
     try {
       const token = localStorage.getItem('token');
-      
       const res = await axios.post(`${API_URL}/api/payment/create-razorpay-order`, {
         amount: order.totalAmount,
         orderId: order._id
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: res.data.amount,
@@ -171,7 +175,7 @@ const Checkout = () => {
             }, {
               headers: { Authorization: `Bearer ${token}` }
             });
-            
+
             if (verifyRes.data.success) {
               localStorage.removeItem('cart');
               window.location.href = `/order-success/${order._id}`;
@@ -189,10 +193,10 @@ const Checkout = () => {
           color: '#3399cc'
         }
       };
-      
+
       const razorpay = new window.Razorpay(options);
       razorpay.open();
-      
+
       razorpay.on('payment.failed', function(response) {
         setError('Payment failed');
       });
@@ -206,13 +210,13 @@ const Checkout = () => {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4">
         <h1 className="text-3xl font-bold mb-8 text-gray-800">Checkout</h1>
-        
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
-        
+
         <div className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
             <AddressSelector
@@ -221,13 +225,18 @@ const Checkout = () => {
               onSelectAddress={setSelectedAddress}
               onRefresh={fetchAddresses}
             />
-            
+
             <PaymentMethod
               selectedMethod={paymentMethod}
               onSelectMethod={setPaymentMethod}
             />
+
+            <CoinDiscountApplier 
+              onApplyDiscount={handleApplyCoinDiscount}
+              orderTotal={calculateTotal().subtotal + calculateTotal().shippingCost}
+            />
           </div>
-          
+
           <div>
             <OrderSummary
               items={cartItems}
