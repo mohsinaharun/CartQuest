@@ -1,19 +1,152 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
+import AdminOrders from "./pages/AdminOrders";
+import AdminProducts from "./pages/AdminProducts";
+import AdminVariants from "./pages/AdminVariants";
+import AdminHome from "./pages/AdminHome";
+
+/**
+ * Cart item shape:
+ * {
+ *   key: string (productId|variantId),
+ *   productId,
+ *   variantId,
+ *   name,
+ *   categoryName,
+ *   color,
+ *   size,
+ *   price,
+ *   imageUrl,
+ *   qty
+ * }
+ */
 
 function App() {
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cartquest_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("cartquest_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  const cartCount = useMemo(
+    () => cart.reduce((sum, it) => sum + (it.qty || 0), 0),
+    [cart]
+  );
+
+  const cartTotal = useMemo(
+    () => cart.reduce((sum, it) => sum + (it.price * it.qty), 0),
+    [cart]
+  );
+
+  const addToCart = (product, variant) => {
+    const key = `${product._id}|${variant._id}`;
+    setCart((prev) => {
+      const idx = prev.findIndex((x) => x.key === key);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+        return next;
+      }
+
+      return [
+        ...prev,
+        {
+          key,
+          productId: product._id,
+          variantId: variant._id,
+          name: product.name,
+          categoryName: product.category?.name || "Category",
+          color: variant.color,
+          size: variant.size,
+          price: variant.price,
+          imageUrl: variant.imageUrl || product.imageUrl,
+          qty: 1,
+        },
+      ];
+    });
+  };
+
+  const incQty = (key) => {
+    setCart((prev) =>
+      prev.map((it) => (it.key === key ? { ...it, qty: it.qty + 1 } : it))
+    );
+  };
+
+  const decQty = (key) => {
+    setCart((prev) =>
+      prev
+        .map((it) => (it.key === key ? { ...it, qty: it.qty - 1 } : it))
+        .filter((it) => it.qty > 0)
+    );
+  };
+
+  const removeItem = (key) => {
+    setCart((prev) => prev.filter((it) => it.key !== key));
+  };
+
+  const clearCart = () => setCart([]);
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <ProductsPage
+            cartCount={cartCount}
+            cartTotal={cartTotal}
+            cart={cart}
+            addToCart={addToCart}
+          />
+        }
+      />
+      <Route
+        path="/cart"
+        element={
+          <CartPage
+            cart={cart}
+            cartTotal={cartTotal}
+            incQty={incQty}
+            decQty={decQty}
+            removeItem={removeItem}
+            clearCart={clearCart}
+          />
+        }
+      />
+        
+        <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/variants" element={<AdminVariants />} />
+        <Route path="/admin" element={<AdminHome />} />
+    </Routes>
+    
+  );
+}
+
+/* -------------------- Products Page (with Drawer) -------------------- */
+
+function ProductsPage({ cartCount, cartTotal, addToCart }) {
+  const navigate = useNavigate();
+
   const [products, setProducts] = useState([]);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Variants data for selected product
+  // Variants data
   const [variants, setVariants] = useState([]);
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsError, setVariantsError] = useState("");
 
-  // Variant selection state
+  // Selected options
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
 
@@ -21,12 +154,25 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [maxPrice, setMaxPrice] = useState(10000);
 
-  // ---------- helpers ----------
+  // Toast popup
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg) => {
+    setToast(msg);
+    window.clearTimeout(window.__toastTimer);
+    window.__toastTimer = window.setTimeout(() => setToast(""), 1600);
+  };
+
+  // category ids
+  const SHOES_ID = "69415dfb91ebe3bc291db066";
+  const BAGS_ID = "694103df91ebe3bc291db01d";
+  const ACCESSORIES_ID = "694103f791ebe3bc291db01f";
+  const CLOTHES_ID = "6941040b91ebe3bc291db021";
+
   const productPriceDisplay = (p) => `৳ ${p?.price ?? "-"}`;
 
-  // Convert color name to a dot color (simple mapping + fallback)
   const colorToHex = (c) => {
-    const x = (c || "").toLowerCase();
+    const x = (c || "").toLowerCase().trim();
     if (x.includes("black")) return "#111";
     if (x.includes("white")) return "#fff";
     if (x.includes("red")) return "#e11d48";
@@ -36,54 +182,13 @@ function App() {
     if (x.includes("pink")) return "#fb7185";
     if (x.includes("brown")) return "#7c4a2d";
     if (x.includes("gray") || x.includes("grey")) return "#9ca3af";
-    if (x.includes("cream") || x.includes("beige")) return "#f3e8d3";
     return "#ddd";
   };
 
-  // ---------- derived data ----------
-  const colors = useMemo(() => {
-    const set = new Set(variants.map((v) => v.color));
-    return [...set].filter(Boolean);
-  }, [variants]);
-
-  const sizesForSelectedColor = useMemo(() => {
-    if (!selectedColor) return [];
-    const set = new Set(
-      variants
-        .filter((v) => v.color === selectedColor)
-        .map((v) => v.size)
-    );
-    return [...set].filter(Boolean);
-  }, [variants, selectedColor]);
-
-  const selectedVariant = useMemo(() => {
-    if (!selectedColor || !selectedSize) return null;
-    return (
-      variants.find((v) => v.color === selectedColor && v.size === selectedSize) ||
-      null
-    );
-  }, [variants, selectedColor, selectedSize]);
-
-  // ✅ IMPORTANT: preview image changes when ONLY color is selected
-  const previewVariant = useMemo(() => {
-    // 1) exact selected variant has image
-    if (selectedVariant?.imageUrl) return selectedVariant;
-
-    // 2) any variant of selected color that has image
-    if (selectedColor) {
-      const v = variants.find((x) => x.color === selectedColor && x.imageUrl);
-      if (v) return v;
-    }
-
-    return null;
-  }, [selectedVariant, selectedColor, variants]);
-
-  // ---------- API calls ----------
   const loadVariants = async (productId) => {
     try {
       setVariantsError("");
       setVariantsLoading(true);
-
       const res = await fetch(`http://localhost:5000/api/variants/${productId}`);
       const data = await res.json();
 
@@ -92,11 +197,9 @@ function App() {
         setVariantsError(data?.message || "Failed to load variants");
         return;
       }
-
-      // ✅ data must include imageUrl from DB
       setVariants(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Error loading variants:", err);
+      console.error(err);
       setVariants([]);
       setVariantsError("Failed to load variants");
     } finally {
@@ -118,12 +221,10 @@ function App() {
       .catch((err) => console.error("Error fetching products:", err));
   }, [selectedCategory, maxPrice]);
 
-  // ---------- drawer controls ----------
   const openDrawer = async (product) => {
     setSelectedProduct(product);
     setDrawerOpen(true);
 
-    // reset selection
     setVariants([]);
     setSelectedColor("");
     setSelectedSize("");
@@ -141,33 +242,71 @@ function App() {
     setSelectedSize("");
   };
 
-  // Esc closes drawer
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") closeDrawer();
-    };
-    if (drawerOpen) window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [drawerOpen]);
+  // Derived: available colors from variants
+  const colors = useMemo(() => {
+    const set = new Set(variants.map((v) => (v.color || "").trim()).filter(Boolean));
+    return [...set];
+  }, [variants]);
 
-  // ---------- category ids ----------
-  const SHOES_ID = "69415dfb91ebe3bc291db066";
-  const BAGS_ID = "694103df91ebe3bc291db01d";
-  const ACCESSORIES_ID = "694103f791ebe3bc291db01f";
-  const CLOTHES_ID = "6941040b91ebe3bc291db021";
+  const sizesForSelectedColor = useMemo(() => {
+    if (!selectedColor) return [];
+    const sc = selectedColor.trim().toLowerCase();
+    const set = new Set(
+      variants
+        .filter((v) => (v.color || "").trim().toLowerCase() === sc)
+        .map((v) => (v.size || "").trim())
+        .filter(Boolean)
+    );
+    return [...set];
+  }, [variants, selectedColor]);
+
+  const selectedVariant = useMemo(() => {
+    if (!selectedColor || !selectedSize) return null;
+    const sc = selectedColor.trim().toLowerCase();
+    const ss = selectedSize.trim().toLowerCase();
+
+    return (
+      variants.find(
+        (v) =>
+          (v.color || "").trim().toLowerCase() === sc &&
+          (v.size || "").trim().toLowerCase() === ss
+      ) || null
+    );
+  }, [variants, selectedColor, selectedSize]);
+
+  const previewVariant = useMemo(() => {
+    if (selectedVariant?.imageUrl) return selectedVariant;
+    if (selectedColor) {
+      const sc = selectedColor.trim().toLowerCase();
+      const v = variants.find(
+        (x) => (x.color || "").trim().toLowerCase() === sc && x.imageUrl
+      );
+      if (v) return v;
+    }
+    return null;
+  }, [variants, selectedColor, selectedVariant]);
+
+  const drawerPrice = selectedVariant?.price ?? selectedProduct?.price ?? 0;
+  const drawerStock = selectedVariant?.stock ?? null;
 
   return (
     <div className="page pastel-bg">
+      {/* Top bar with Cart icon */}
+      <div className="topbar">
+        <div className="topbar-left" />
+        <button className="cart-btn" onClick={() => navigate("/cart")}>
+          🛒
+          {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+          <span className="cart-total-mini">৳ {cartTotal}</span>
+        </button>
+      </div>
+
       <header className="header">
         <h1 className="title">CartQuest</h1>
         <p className="subtitle">Soft essentials for everyday elegance</p>
       </header>
 
       <main className="content content-soft">
-        {products.length === 0 && (
-          <p className="info-text">Loading products or no products found.</p>
-        )}
-
         {/* Filters */}
         <div className="filters">
           <select
@@ -194,7 +333,7 @@ function App() {
           </div>
         </div>
 
-        {/* Product cards */}
+        {/* Product grid */}
         <div className="product-grid tall-cards">
           {products.map((p) => (
             <article className="product-card pastel-card" key={p._id}>
@@ -212,12 +351,9 @@ function App() {
               <p className="product-description desc-soft">{p.description}</p>
 
               <div className="product-footer footer-soft">
-                <span className="product-price price-soft">
-                  {productPriceDisplay(p)}
-                </span>
-
+                <span className="product-price price-soft">{productPriceDisplay(p)}</span>
                 <button className="product-btn btn-soft" onClick={() => openDrawer(p)}>
-                  Select options
+                  Add to cart
                 </button>
               </div>
             </article>
@@ -225,11 +361,13 @@ function App() {
         </div>
       </main>
 
-      {/* Drawer + Backdrop */}
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
+
+      {/* Drawer */}
       {drawerOpen && (
         <>
           <div className="drawer-backdrop" onClick={closeDrawer} />
-
           <aside className="drawer" role="dialog" aria-modal="true">
             <div className="drawer-header">
               <div>
@@ -239,51 +377,38 @@ function App() {
                   {productPriceDisplay(selectedProduct)}
                 </div>
               </div>
-
               <button className="drawer-close" onClick={closeDrawer} aria-label="Close">
                 ✕
               </button>
             </div>
 
-            {/* ✅ Drawer image: changes when color is clicked */}
             {(previewVariant?.imageUrl || selectedProduct?.imageUrl) && (
               <div className="drawer-image-wrap">
                 <img
                   className="drawer-image"
                   src={previewVariant?.imageUrl || selectedProduct.imageUrl}
                   alt={selectedProduct?.name || "Product"}
-                  onError={() => {
-                    console.log(
-                      "IMAGE FAILED:",
-                      previewVariant?.imageUrl || selectedProduct?.imageUrl
-                    );
-                  }}
                 />
               </div>
             )}
 
             <div className="drawer-body">
-              <h3 className="drawer-section-title">Choose color</h3>
-
               {variantsLoading && <p className="info-text">Loading variants...</p>}
-
               {!variantsLoading && variantsError && (
                 <p className="info-text">{variantsError}</p>
               )}
 
               {!variantsLoading && !variantsError && variants.length === 0 && (
-                <p className="info-text">
-                  No variants found for this product.
-                </p>
+                <p className="info-text">No variants found for this product.</p>
               )}
 
               {!variantsLoading && variants.length > 0 && (
                 <>
-                  {/* Color circles */}
+                  <h3 className="drawer-section-title">Choose color</h3>
                   <div className="color-row">
                     {colors.map((c) => {
-                      const colorHasStock = variants.some(
-                        (v) => v.color === c && (v.stock ?? 0) > 0
+                      const hasStock = variants.some(
+                        (v) => (v.color || "").trim().toLowerCase() === c.trim().toLowerCase() && (v.stock ?? 0) > 0
                       );
                       const active = selectedColor === c;
 
@@ -291,15 +416,14 @@ function App() {
                         <button
                           key={c}
                           className={`color-dot ${active ? "active" : ""} ${
-                            !colorHasStock ? "disabled" : ""
+                            !hasStock ? "disabled" : ""
                           }`}
                           onClick={() => {
-                            if (!colorHasStock) return;
+                            if (!hasStock) return;
                             setSelectedColor(c);
                             setSelectedSize("");
                           }}
                           title={c}
-                          aria-label={`Select color ${c}`}
                         >
                           <span
                             className="color-dot-inner"
@@ -325,8 +449,11 @@ function App() {
                   ) : (
                     <div className="size-row">
                       {sizesForSelectedColor.map((s) => {
+                        const sc = selectedColor.trim().toLowerCase();
                         const v = variants.find(
-                          (x) => x.color === selectedColor && x.size === s
+                          (x) =>
+                            (x.color || "").trim().toLowerCase() === sc &&
+                            (x.size || "").trim() === s
                         );
                         const inStock = (v?.stock ?? 0) > 0;
                         const active = selectedSize === s;
@@ -349,27 +476,25 @@ function App() {
                     </div>
                   )}
 
-                  {/* Selected variant summary */}
                   <div className="variant-summary">
                     <div>
-                      Price:{" "}
-                      <b>৳ {selectedVariant?.price ?? selectedProduct?.price ?? "-"}</b>
+                      Price: <b>৳ {drawerPrice}</b>
                     </div>
                     <div>
-                      Stock: <b>{selectedVariant ? selectedVariant.stock : "-"}</b>
+                      Stock: <b>{drawerStock ?? "-"}</b>
                     </div>
                   </div>
 
                   <button
                     className="variant-add"
                     disabled={!selectedVariant || (selectedVariant.stock ?? 0) <= 0}
-                    onClick={() =>
-                      alert(
-                        `Next step: add to cart\nProduct: ${selectedProduct?.name}\nVariant: ${selectedVariant.size}/${selectedVariant.color}\nPrice: ৳${selectedVariant.price}`
-                      )
-                    }
+                    onClick={() => {
+                      if (!selectedProduct || !selectedVariant) return;
+                      addToCart(selectedProduct, selectedVariant);
+                      showToast("Item added to cart ✅");
+                    }}
                   >
-                    Add to Cart
+                    ADD TO CART
                   </button>
 
                   {!selectedVariant && (
@@ -389,6 +514,95 @@ function App() {
           </aside>
         </>
       )}
+    </div>
+  );
+}
+
+/* -------------------- Cart Page -------------------- */
+
+function CartPage({ cart, cartTotal, incQty, decQty, removeItem, clearCart }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="page pastel-bg">
+      <div className="cart-header">
+        <button className="back-btn" onClick={() => navigate("/")}>
+          ← Back
+        </button>
+        <div className="cart-title">Your Cart</div>
+      </div>
+
+      <main className="content content-soft">
+        {cart.length === 0 ? (
+          <div style={{ padding: 12 }}>
+            <p className="info-text">Your cart is empty.</p>
+            <button className="product-btn btn-soft" onClick={() => navigate("/")}>
+              Shop products
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="cart-list">
+              {cart.map((it) => (
+                <div className="cart-item" key={it.key}>
+                  <div className="cart-thumb">
+                    {it.imageUrl ? (
+                      <img src={it.imageUrl} alt={it.name} />
+                    ) : (
+                      <div className="cart-thumb-fallback">🛍️</div>
+                    )}
+                  </div>
+
+                  <div className="cart-info">
+                    <div className="cart-name">{it.name}</div>
+                    <div className="cart-meta">
+                      {it.categoryName} • {it.color} • Size {it.size}
+                    </div>
+                    <div className="cart-price">৳ {it.price}</div>
+
+                    <div className="qty-row">
+                      <button className="qty-btn" onClick={() => decQty(it.key)}>
+                        −
+                      </button>
+                      <span className="qty-num">{it.qty}</span>
+                      <button className="qty-btn" onClick={() => incQty(it.key)}>
+                        +
+                      </button>
+
+                      <button className="remove-btn" onClick={() => removeItem(it.key)}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="cart-line-total">
+                    ৳ {it.price * it.qty}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="cart-summary">
+              <div className="summary-row">
+                <span>Total</span>
+                <b>৳ {cartTotal}</b>
+              </div>
+
+              <div className="summary-actions">
+                <button className="drawer-secondary" onClick={clearCart}>
+                  Clear cart
+                </button>
+                <button
+                  className="variant-add"
+                  onClick={() => alert("Next: checkout / order creation")}
+                >
+                  Checkout
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
