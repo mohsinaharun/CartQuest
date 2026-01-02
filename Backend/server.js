@@ -9,10 +9,14 @@ import "./models/Category.js";
 import "./models/Image.js";
 import "./models/Variant.js";
 import "./models/Product.js";
+import "./models/Order.js";
 
 import productRoutes from "./routes/productRoutes.js";
 import variantRoutes from "./routes/variantRoutes.js";
-
+import adminProductRoutes from "./routes/adminProductRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import adminOrderRoutes from "./routes/adminOrderRoutes.js";
+import adminVariantRoutes from "./routes/adminVariantRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -29,7 +33,10 @@ console.log("Serving uploads from:", path.join(__dirname, "uploads"));
 // Routes
 app.use("/api/products", productRoutes);
 app.use("/api/variants", variantRoutes);
-
+app.use("/api/admin/products", adminProductRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin/orders", adminOrderRoutes);
+app.use("/api/admin/variants", adminVariantRoutes);
 const PORT = process.env.PORT || 5000;
 
 mongoose
