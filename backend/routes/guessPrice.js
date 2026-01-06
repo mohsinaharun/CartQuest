@@ -32,7 +32,10 @@ router.get('/product', async (req, res) => {
 // @desc    Submit a guess
 // @access  Private
 router.post('/submit', auth, async (req, res) => {
-    const { productId, guessedPrice } = req.body;
+    const { productId, guess } = req.body;
+    const guessedPrice = Number(guess);
+
+    console.log(`[Game] User: ${req.user.id}, Product: ${productId}, Guess: ${guess}`); // Debug log
 
     try {
         const product = await Product.findById(productId);
