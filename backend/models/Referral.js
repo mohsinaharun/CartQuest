@@ -37,20 +37,20 @@ const referralSchema = new mongoose.Schema({
 });
 
 // Generate unique referral code
-referralSchema.statics.generateReferralCode = async function(userId) {
+referralSchema.statics.generateReferralCode = async function (userId) {
   const code = `MAHI${userId.toString().slice(-6).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-  
+
   // Check if code already exists
   const exists = await this.findOne({ referralCode: code });
   if (exists) {
     return this.generateReferralCode(userId); // Try again
   }
-  
+
   return code;
 };
 
 // Index for faster lookups
-referralSchema.index({ referralCode: 1 });
+// referralCode is already indexed by unique: true and index: true in definition
 referralSchema.index({ referrerId: 1, status: 1 });
 
 module.exports = mongoose.model('Referral', referralSchema);
