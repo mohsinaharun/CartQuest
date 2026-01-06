@@ -97,14 +97,23 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/products
 // @desc    Create new product
 // @access  Private (Admin)
-router.post('/', admin, async (req, res) => {
+// @route   POST /api/products
+// @desc    Create new product
+// @access  Private (Admin)
+router.post('/', auth, admin, async (req, res) => {
     try {
+        console.log('[DEBUG] POST /api/products reached. Body:', req.body);
         const product = await Product.create(req.body);
         res.status(201).json({ success: true, data: product });
     } catch (err) {
         console.error(err);
         if (err.code === 11000) {
-            return res.status(400).json({ success: false, error: 'Product with this name already exists' });
+            console.error('Duplicate Key Error:', err.keyValue);
+            return res.status(400).json({
+                success: false,
+                error: 'Duplicate field value',
+                keyValue: err.keyValue
+            });
         }
         res.status(400).json({ success: false, error: err.message });
     }
@@ -113,7 +122,7 @@ router.post('/', admin, async (req, res) => {
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private (Admin)
-router.put('/:id', admin, async (req, res) => {
+router.put('/:id', auth, admin, async (req, res) => {
     try {
         let product = await Product.findById(req.params.id);
 
@@ -136,7 +145,7 @@ router.put('/:id', admin, async (req, res) => {
 // @route   DELETE /api/products/:id
 // @desc    Delete product
 // @access  Private (Admin)
-router.delete('/:id', admin, async (req, res) => {
+router.delete('/:id', auth, admin, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
 

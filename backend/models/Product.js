@@ -22,6 +22,12 @@ const productSchema = new mongoose.Schema({
         required: [true, 'Please add a base price'],
         min: 0
     },
+    stock: {
+        type: Number,
+        required: true,
+        min: 0,
+        default: 0
+    },
     images: [{
         type: String, // URLs to images
         required: true
@@ -47,7 +53,8 @@ const productSchema = new mongoose.Schema({
         },
         sku: {
             type: String,
-            unique: true
+            unique: true,
+            sparse: true
         }
     }],
     attributes: { // Generic attributes for filtering

@@ -205,29 +205,38 @@ const AdminProductsPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {products.map(product => (
-                            <tr key={product._id} className="border-b hover:bg-gray-50">
-                                <td className="p-4">
-                                    <img src={product.images[0]} alt={product.name} className="w-12 h-12 object-cover rounded" />
-                                </td>
-                                <td className="p-4 font-medium">{product.name}</td>
-                                <td className="p-4">${product.basePrice}</td>
-                                <td className="p-4">
-                                    <span className={`px-2 py-1 rounded-full text-xs ${product.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                        {product.stock}
-                                    </span>
-                                </td>
-                                <td className="p-4 text-gray-500">{product.category?.name || 'N/A'}</td>
-                                <td className="p-4">
-                                    <button
-                                        onClick={() => handleDelete(product._id)}
-                                        className="text-red-600 hover:text-red-900 font-semibold"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
+                        {products.map(product => {
+                            // Calculate total stock: default to root stock, but if variants exist, sum them up
+                            let displayStock = product.stock || 0;
+                            if (product.variants && product.variants.length > 0) {
+                                const variantStock = product.variants.reduce((acc, v) => acc + (v.stock || 0), 0);
+                                if (variantStock > 0) displayStock = variantStock;
+                            }
+
+                            return (
+                                <tr key={product._id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4">
+                                        <img src={product.images[0]} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                                    </td>
+                                    <td className="p-4 font-medium">{product.name}</td>
+                                    <td className="p-4">${product.basePrice}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded-full text-xs ${displayStock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                            {displayStock}
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-gray-500">{product.category?.name || 'N/A'}</td>
+                                    <td className="p-4">
+                                        <button
+                                            onClick={() => handleDelete(product._id)}
+                                            className="text-red-600 hover:text-red-900 font-semibold"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
