@@ -1,0 +1,412 @@
+﻿* A clean homepage with:
+
+   * Featured products
+
+   * Categories (Men, Women, Electronics, etc.)
+
+   * Filters on the left/top
+
+   * Product grid in the center
+
+Each product card shows:
+      * Product image (main image)
+
+      * Product name
+
+      * Price (or price range if variants exist)
+
+      * Small indicators (e.g., “Coins Earned”, “Discount Available”)
+
+      * “Add to Cart” button
+
+Behind the scenes
+         * products table stores core product info
+
+         * product_images table stores multiple images per product
+
+         * variants table stores size/color combinations
+
+         * categories table links products to categories
+
+The frontend calls:
+GET /api/products?category=Shoes&minPrice=100&maxPrice=300
+
+
+The backend:
+            * Joins product + images + variants
+
+            * Applies category & price filters
+
+            * Returns optimized JSON
+
+________________
+
+
+B. Filtering Experience
+User interaction
+               * User selects:
+
+                  * Category: “Sneakers”
+
+                  * Price range: 200–500
+
+The product grid updates instantly (no page reload).
+Backend logic
+                     * SQL / ORM filtering:
+
+                        * Category ID match
+
+                        * Variant price range match
+
+                           * Only valid products returned
+
+This makes browsing feel fast and modern.
+________________
+
+
+C. Product Details & Variant Selection
+Product Detail Page
+When user clicks a product:
+                              * Image gallery (from product_images)
+
+                              * Product description
+
+                              * Variant selectors:
+
+                                 * Size buttons
+
+                                 * Color swatches
+
+                                    * Price updates dynamically based on variant
+
+Important concept
+Variants are treated as unique sellable items, not just UI options.
+Behind the scenes:
+                                       * Each variant has:
+
+                                          * Variant ID
+
+                                          * Price
+
+                                          * Stock
+
+                                          * Attributes (size, color)
+
+________________
+
+
+D. Cart Management (Real-Time Feel)
+Cart behavior
+                                             * User clicks “Add to Cart”
+
+                                             * Mini-cart slides in
+
+                                             * Cart shows:
+
+                                                * Product name
+
+                                                * Selected variant
+
+                                                * Quantity
+
+                                                * Price
+
+                                                * Remove button
+
+Dynamic updates
+If user:
+                                                   * Changes quantity → total updates instantly
+
+                                                   * Changes variant → price recalculates
+
+                                                   * Removes item → cart updates
+
+Backend APIs
+                                                      * POST /cart/add
+
+                                                      * PUT /cart/update
+
+                                                      * DELETE /cart/remove
+
+Cart logic:
+                                                         * Cart items are tied to:
+
+                                                            * User ID (or session ID)
+
+                                                            * Product ID + Variant ID
+
+                                                               * Totals calculated server-side for accuracy
+
+________________
+
+
+3. Checkout & Order Placement
+________________
+
+
+A. Address Selection
+UI experience
+                                                                  * User sees:
+
+                                                                     * Saved addresses
+
+                                                                     * “Add new address” option
+
+Addresses stored in:
+                                                                        * addresses table
+
+                                                                        * Linked to user
+
+________________
+
+
+B. Rewards & Discounts (Mahi Coins)
+Coins visibility
+                                                                           * Coin balance visible in header/profile
+
+                                                                           * “Apply Coins” checkbox at checkout
+
+Coin logic
+                                                                              * Each purchase:
+
+                                                                                 * Awards coins (e.g., 5% of order value)
+
+                                                                                    * Referral purchases:
+
+                                                                                       * Give bonus coins to referrer
+
+Coins stored in:
+                                                                                          * coin_transactions
+
+                                                                                          * Balance derived from transactions (ledger system)
+
+Coins can:
+                                                                                             * Convert to discounts
+
+                                                                                             * Reduce checkout total
+
+________________
+
+
+C. Payment Flow
+Payment UI
+                                                                                                * User selects:
+
+                                                                                                   * Stripe (Card)
+
+                                                                                                   * Razorpay (UPI / Wallet)
+
+Backend flow
+                                                                                                      1. Create payment intent
+
+                                                                                                      2. User completes payment
+
+                                                                                                      3. Payment gateway confirms
+
+                                                                                                      4. Backend verifies signature
+
+                                                                                                      5. Order marked as Paid
+
+No order is created as “Confirmed” until payment is verified.
+________________
+
+
+D. Order Confirmation
+User receives:
+                                                                                                         * Order confirmation screen
+
+                                                                                                         * Digital receipt
+
+                                                                                                         * Coins credited
+
+                                                                                                         * Referral rewards applied
+
+Order stored in:
+                                                                                                            * orders
+
+                                                                                                            * order_items
+
+________________
+
+
+4. Order Tracking & History
+Order history page
+User sees:
+                                                                                                               * Current orders
+
+                                                                                                               * Past orders
+
+                                                                                                               * Status timeline:
+
+                                                                                                                  * Pending
+
+                                                                                                                  * Processing
+
+                                                                                                                  * Shipped
+
+                                                                                                                  * Delivered
+
+Real-time updates
+                                                                                                                     * Polling or WebSockets
+
+                                                                                                                     * Status updates without refresh
+
+________________
+
+
+5. Admin Experience (Business Control)
+________________
+
+
+A. Admin Authentication
+                                                                                                                        * Admins have special roles
+
+                                                                                                                        * Protected routes
+
+                                                                                                                        * Role-based authorization
+
+________________
+
+
+B. Product Management
+Admin UI
+                                                                                                                           * Add new product
+
+                                                                                                                           * Upload images
+
+                                                                                                                           * Define variants
+
+                                                                                                                           * Set prices & stock
+
+                                                                                                                           * Edit or delete products
+
+Every admin action:
+                                                                                                                              * Hits secure backend APIs
+
+                                                                                                                              * Updates database immediately
+
+________________
+
+
+C. Order Management
+Admin Order Panel
+                                                                                                                                 * View all orders
+
+                                                                                                                                 * Filter by status
+
+                                                                                                                                 * Update order status
+
+Status updates:
+                                                                                                                                    * Instantly visible to users
+
+                                                                                                                                    * Trigger real-time updates
+
+________________
+
+
+6. Gamification Systems (Your Unique Value)
+________________
+
+
+A. Mahi Coins & Referrals
+Referral flow
+                                                                                                                                       * User gets referral code
+
+                                                                                                                                       * New user signs up using it
+
+                                                                                                                                       * Both earn coins after purchase
+
+Referral tracking:
+                                                                                                                                          * Dedicated referral table
+
+                                                                                                                                          * Prevents abuse
+
+________________
+
+
+B. Spin Deal Wheel
+User experience
+                                                                                                                                             * Animated spinning wheel
+
+                                                                                                                                             * Daily spin limit
+
+                                                                                                                                             * Fun outcomes:
+
+                                                                                                                                                * Discount %
+
+                                                                                                                                                * Virtual hug
+
+                                                                                                                                                * Try again
+
+                                                                                                                                                * Nothing
+
+Backend logic
+                                                                                                                                                   * Randomized reward selection
+
+                                                                                                                                                   * Stored spin results
+
+                                                                                                                                                   * Discounts auto-applied
+
+This keeps users returning daily.
+________________
+
+
+C. Guess the Price Mini-Game
+Gameplay
+                                                                                                                                                      * Show product
+
+                                                                                                                                                      * User guesses price
+
+                                                                                                                                                      * Submit guess
+
+Backend validation
+                                                                                                                                                         * Check accuracy threshold
+
+                                                                                                                                                         * Award coins
+
+                                                                                                                                                         * Update leaderboard
+
+Leaderboard:
+                                                                                                                                                            * Top users by score
+
+                                                                                                                                                            * Encourages competition
+
+________________
+
+
+7. System Architecture (Big Picture)
+Frontend
+                                                                                                                                                               * React / Next.js
+
+                                                                                                                                                               * State management for cart & coins
+
+                                                                                                                                                               * Real-time updates
+
+Backend
+                                                                                                                                                                  * REST APIs
+
+                                                                                                                                                                  * Auth & role management
+
+                                                                                                                                                                  * Payment & reward logic
+
+Database
+                                                                                                                                                                     * Normalized structure
+
+                                                                                                                                                                     * Transaction-based coin system
+
+                                                                                                                                                                     * Audit-friendly orders
+
+________________
+
+
+8. Final Mental Image
+Your website feels like:
+                                                                                                                                                                        * Amazon-level shopping
+
+                                                                                                                                                                        * Duolingo-style gamification
+
+                                                                                                                                                                        * Zara-like product browsing
+
+                                                                                                                                                                        * Reward-driven loyalty system
+
+Every feature you listed fits into a single, unified experience, not isolated parts.

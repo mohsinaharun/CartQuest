@@ -17,9 +17,14 @@ const sectors = [
   ...specialOutcomes
 ];
 
-// GET /api/wheel -> return current wheel sectors (for frontend to render)
+const auth = require("../middleware/auth");
+const User = require("../models/User");
+
+// ... imports and sectors consts remain ...
+
+// GET /api/wheel -> Public
 router.get("/", (req, res) => {
-  // send sectors with minimal fields for rendering
+  // ... existing logic ...
   res.json({
     sectors: sectors.map((s) => ({
       type: s.type,
@@ -29,42 +34,48 @@ router.get("/", (req, res) => {
   });
 });
 
-// POST /api/wheel/spin -> return a random outcome
-router.post("/spin", (req, res) => {
-  // simple random selection — you can replace this with weighted logic if desired
-  const randomIndex = Math.floor(Math.random() * sectors.length);
-  const selected = sectors[randomIndex];
+// POST /api/wheel/spin -> Private, saves coupon
+router.post("/spin", auth, async (req, res) => {
+  try {
+    const randomIndex = Math.floor(Math.random() * sectors.length);
+    const selected = sectors[randomIndex];
+    let outcome;
 
-  // normalize response
-  let outcome;
-  if (selected.type === "discount") {
-    outcome = {
-      type: "discount",
-      label: selected.label,
-      value: selected.value,
-      message: `You won ${selected.value}% off!`
-    };
-  } else if (selected.type === "virtual_hug") {
-    outcome = {
-      type: "virtual_hug",
-      label: selected.label,
-      message: selected.message
-    };
-  } else if (selected.type === "try_again") {
-    outcome = {
-      type: "try_again",
-      label: selected.label,
-      message: selected.message
-    };
-  } else {
-    outcome = {
-      type: "nothing",
-      label: selected.label,
-      message: selected.message ?? "No prize."
-    };
+    if (selected.type === "discount") {
+      const couponCode = `SAVE${selected.value}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+
+      // Save to user
+      await User.findByIdAndUpdate(req.user.id, {
+        $push: {
+          coupons: {
+            code: couponCode,
+            discount: selected.value,
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+          }
+        }
+      });
+
+      outcome = {
+        type: "discount",
+        label: selected.label,
+        value: selected.value,
+        code: couponCode, // Return the code!
+        message: `You won ${selected.value}% off! Code: ${couponCode}`
+      };
+    } else {
+      // ... handle other types ...
+      outcome = {
+        type: selected.type,
+        label: selected.label,
+        message: selected.message || "Better luck next time"
+      };
+    }
+
+    res.json({ outcome });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
   }
-
-  res.json({ outcome });
 });
 
 module.exports = router;

@@ -1,145 +1,98 @@
 import { useState } from "react";
 import { spinWheel } from "../api/wheel";
+import Confetti from 'react-canvas-confetti';
 
 function WheelPage() {
   const [outcome, setOutcome] = useState(null);
   const [spinning, setSpinning] = useState(false);
   const [error, setError] = useState(null);
+  const [fireConfetti, setFireConfetti] = useState(false);
 
   const handleSpin = async () => {
     setSpinning(true);
     setOutcome(null);
     setError(null);
+    setFireConfetti(false);
 
     try {
-      const res = await spinWheel(); // expects { outcome: { type, label, value?, message } }
+      const res = await spinWheel();
+      // Simulating a win for demo: (Removed)
+      // const res = { outcome: { type: 'discount', value: 20, message: "Big Win!", label: "20% OFF" } };
+
       const result = res?.outcome ?? null;
-      // small UX delay for "spinning" feel
+
       setTimeout(() => {
         setOutcome(result);
         setSpinning(false);
-      }, 900);
+        if (result?.type === 'discount' || result?.type === 'virtual_hug') {
+          setFireConfetti(true);
+        }
+      }, 2000); // Longer spin for suspense
     } catch (err) {
       setError("Failed to spin. Try again.");
       setSpinning(false);
     }
   };
 
-  const renderCenter = () => {
-    if (spinning) return "🎡 Spinning...";
-    if (!outcome) return "🎡";
-    switch (outcome.type) {
-      case "discount":
-        return <span style={{fontSize:"2.2rem", fontWeight:700}}>{outcome.value}%</span>;
-      case "virtual_hug":
-        return <span style={{fontSize:"2rem"}}>🎁</span>;
-      case "try_again":
-        return <span style={{fontSize:"2rem"}}>🔁</span>;
-      case "nothing":
-      default:
-        return <span style={{fontSize:"2rem"}}>❌</span>;
-    }
-  };
+  return (
+    <div className="min-h-[80vh] bg-gradient-to-b from-indigo-900 to-slate-900 flex flex-col items-center justify-center text-white relative overflow-hidden">
+      {fireConfetti && <Confetti style={{ position: 'fixed', width: '100%', height: '100%', zIndex: 100, pointerEvents: 'none' }} />}
 
-  const renderMessage = () => {
-    if (error) return <p style={{ marginTop: 20, color: "crimson" }}>{error}</p>;
-    if (!outcome) return null;
+      <div className="text-center z-10 mb-10">
+        <h1 className="text-5xl font-extrabold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">
+          Spin & Win!
+        </h1>
+        <p className="text-gray-300 text-lg">Test your luck to win exclusive discounts.</p>
+      </div>
 
-    switch (outcome.type) {
-      case "discount":
-        return (
-          <div style={{ marginTop: 18 }}>
-            <p style={{ margin: 0, fontWeight: 700 }}>{outcome.message}</p>
-            <p style={{ margin: "6px 0 0", color: "#475569" }}>
-              Code: SAVE{outcome.value} (example)
-            </p>
+      <div className="relative">
+        {/* Wheel Container */}
+        <div className={`w-80 h-80 rounded-full border-8 border-amber-400 bg-white flex items-center justify-center relative shadow-[0_0_50px_rgba(251,191,36,0.5)] transition-transform duration-[2000ms] ease-out ${spinning ? 'rotate-[1080deg]' : ''}`}>
+
+          {/* Simple visual wheel segments */}
+          <div className="absolute w-full h-full rounded-full overflow-hidden opacity-20">
+            <div className="w-1/2 h-full bg-red-500 absolute left-0"></div>
+            <div className="w-full h-1/2 bg-blue-500 absolute top-0"></div>
           </div>
-        );
-      case "virtual_hug":
-        return (
-          <div style={{ marginTop: 18 }}>
-            <p style={{ margin: 0, fontWeight: 700 }}>{outcome.label}</p>
-            <p style={{ margin: "6px 0 0", color: "#475569" }}>{outcome.message}</p>
+
+          <div className="z-10 text-4xl">
+            {spinning ? '🎡' : (outcome ? (outcome.type === 'discount' ? '🎉' : '🎁') : '🎰')}
           </div>
-        );
-      case "try_again":
-        return (
-          <div style={{ marginTop: 18 }}>
-            <p style={{ margin: 0, fontWeight: 700 }}>{outcome.message}</p>
+        </div>
+
+        {/* Pointer */}
+        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-4xl text-red-500 z-20">
+          ▼
+        </div>
+      </div>
+
+      <div className="mt-12 h-32 text-center">
+        {spinning ? (
+          <p className="text-2xl font-bold animate-pulse text-yellow-300">Spinning...</p>
+        ) : outcome ? (
+          <div className="animate-bounce">
+            <h2 className="text-3xl font-bold text-white mb-2">{outcome.message}</h2>
+            {outcome.type === 'discount' && (
+              <div className="bg-white text-indigo-900 px-6 py-2 rounded-lg inline-block font-mono text-xl font-bold border-2 border-dashed border-indigo-500">
+                Code: {outcome.code || `SAVE${outcome.value}`}
+              </div>
+            )}
             <button
               onClick={handleSpin}
-              disabled={spinning}
-              style={{
-                marginTop: 10,
-                padding: "8px 18px",
-                background: "#f59e0b",
-                border: "none",
-                borderRadius: 6,
-                color: "#fff",
-                cursor: "pointer",
-                fontWeight: 700
-              }}
+              className="block mx-auto mt-6 text-sm text-gray-400 hover:text-white underline"
             >
-              Spin again
+              Spin Again
             </button>
           </div>
-        );
-      case "nothing":
-      default:
-        return (
-          <div style={{ marginTop: 18 }}>
-            <p style={{ margin: 0, fontWeight: 700 }}>{outcome.message ?? "No prize this time."}</p>
-            <p style={{ marginTop: 6, color: "#475569" }}>Better luck next spin.</p>
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div style={{
-      textAlign: "center",
-      padding: "50px",
-      fontFamily: "Inter, Arial, sans-serif",
-      minHeight: "70vh"
-    }}>
-      <h2>Spin the Wheel!</h2>
-
-      <div style={{
-        width: "320px",
-        height: "320px",
-        margin: "40px auto",
-        borderRadius: "50%",
-        border: `12px solid ${spinning ? "#fde68a" : "#f0c14b"}`,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "2rem",
-        background: spinning ? "#fff7ed" : "#fff3e0",
-        transition: "all 650ms ease"
-      }}>
-        {renderCenter()}
+        ) : (
+          <button
+            onClick={handleSpin}
+            className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-lg transform hover:scale-105 transition-all"
+          >
+            SPIN NOW
+          </button>
+        )}
       </div>
-
-      <div>
-        <button
-          onClick={handleSpin}
-          disabled={spinning}
-          style={{
-            padding: "12px 30px",
-            fontSize: "1rem",
-            cursor: spinning ? "not-allowed" : "pointer",
-            background: "#f59e0b",
-            border: "none",
-            borderRadius: "8px",
-            color: "#111827",
-            fontWeight: 700
-          }}
-        >
-          {spinning ? "Spinning..." : "Spin"}
-        </button>
-      </div>
-
-      {renderMessage()}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 const ReferralCode = () => {
   const [referralCode, setReferralCode] = useState('');
@@ -8,32 +8,22 @@ const ReferralCode = () => {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
   useEffect(() => {
     fetchReferralData();
   }, []);
 
   const fetchReferralData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
       // Fetch referral code
-      const codeRes = await axios.get(`${API_URL}/api/referrals/my-code`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const codeRes = await api.get('/referrals/my-code');
       setReferralCode(codeRes.data.referralCode);
-      
+
       // Fetch stats
-      const statsRes = await axios.get(`${API_URL}/api/referrals/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const statsRes = await api.get('/referrals/stats');
       setStats(statsRes.data);
-      
+
       // Fetch referral list
-      const referralsRes = await axios.get(`${API_URL}/api/referrals/my-referrals`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const referralsRes = await api.get('/referrals/my-referrals');
       setReferrals(referralsRes.data.referrals);
     } catch (error) {
       console.error('Error fetching referral data:', error);
@@ -51,14 +41,14 @@ const ReferralCode = () => {
   const shareReferral = (platform) => {
     const message = `Join CartQuest and get 50 Mahi Coins! Use my referral code: ${referralCode}`;
     const encodedMessage = encodeURIComponent(message);
-    
+
     const urls = {
       whatsapp: `https://wa.me/?text=${encodedMessage}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedMessage}`,
       twitter: `https://twitter.com/intent/tweet?text=${encodedMessage}`,
       email: `mailto:?subject=Join CartQuest&body=${encodedMessage}`
     };
-    
+
     window.open(urls[platform], '_blank');
   };
 
@@ -76,7 +66,7 @@ const ReferralCode = () => {
       {/* Referral Code Card */}
       <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg p-6 text-white">
         <h3 className="text-lg font-semibold mb-4">Your Referral Code</h3>
-        
+
         <div className="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm mb-4">
           <div className="flex items-center justify-between">
             <span className="text-3xl font-bold tracking-wider">{referralCode}</span>
@@ -129,12 +119,12 @@ const ReferralCode = () => {
             <p className="text-sm text-gray-600 mb-1">Successful Referrals</p>
             <p className="text-3xl font-bold text-purple-600">{stats.completedReferrals}</p>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Pending Referrals</p>
             <p className="text-3xl font-bold text-orange-600">{stats.pendingReferrals}</p>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <p className="text-sm text-gray-600 mb-1">Total Coins Earned</p>
             <p className="text-3xl font-bold text-green-600">{stats.totalCoinsEarned}</p>
@@ -148,7 +138,7 @@ const ReferralCode = () => {
           <div className="p-6 border-b">
             <h3 className="text-lg font-semibold text-gray-800">Your Referrals</h3>
           </div>
-          
+
           <div className="divide-y">
             {referrals.map((referral) => (
               <div key={referral._id} className="p-6 flex items-center justify-between">
@@ -164,7 +154,7 @@ const ReferralCode = () => {
                     })}
                   </p>
                 </div>
-                
+
                 <div className="text-right">
                   <p className="text-green-600 font-semibold">+100 coins</p>
                   <span className="inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">

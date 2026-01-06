@@ -1,11 +1,11 @@
-const API_URL = "http://localhost:5000/api/wheel";
+import api from './axios';
 
 export const getDiscounts = async () => {
-  const res = await fetch(API_URL);
-  return res.json();
+  const res = await api.get('/wheel');
+  return res.data;
 };
 
 export const spinWheel = async () => {
-  const res = await fetch(`${API_URL}/spin`, { method: "POST" });
-  return res.json();
+  const res = await api.post('/wheel/spin');
+  return res.data;
 };

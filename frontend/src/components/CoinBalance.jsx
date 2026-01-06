@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 const CoinBalance = () => {
   const [balance, setBalance] = useState(0);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     fetchBalance();
@@ -14,10 +12,7 @@ const CoinBalance = () => {
 
   const fetchBalance = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/coins/balance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`/coins/balance`);
       setBalance(res.data.balance);
       setConfig(res.data.config);
     } catch (error) {
@@ -46,7 +41,7 @@ const CoinBalance = () => {
           </div>
           <p className="text-sm opacity-90 mt-1">≈ ${dollarValue} value</p>
         </div>
-        
+
         <div className="text-right">
           <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
             <p className="text-xs opacity-90">Earn Rate</p>
@@ -57,7 +52,7 @@ const CoinBalance = () => {
           </div>
         </div>
       </div>
-      
+
       {config && balance >= config.minCoinsForRedemption && (
         <div className="mt-4 bg-white bg-opacity-20 rounded p-2 text-center text-sm">
           🎉 You can redeem your coins for discounts!

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 
 const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefresh }) => {
   const [showForm, setShowForm] = useState(false);
@@ -17,8 +17,6 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const resetForm = () => {
     setFormData({
@@ -59,18 +57,12 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
-      
       if (editingId) {
-        await axios.put(`${API_URL}/api/addresses/${editingId}`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`/addresses/${editingId}`, formData);
       } else {
-        await axios.post(`${API_URL}/api/addresses`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.post(`/addresses`, formData);
       }
-      
+
       resetForm();
       onRefresh();
     } catch (error) {
@@ -87,10 +79,7 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/addresses/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/addresses/${id}`);
       onRefresh();
     } catch (error) {
       console.error('Error deleting address:', error);
@@ -100,10 +89,7 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
 
   const handleSetDefault = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API_URL}/api/addresses/${id}/set-default`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.patch(`/addresses/${id}/set-default`);
       onRefresh();
     } catch (error) {
       console.error('Error setting default address:', error);
@@ -113,13 +99,13 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">Delivery Address</h2>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
           {error}
         </div>
       )}
-      
+
       <div className="space-y-3 mb-4">
         {addresses.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No addresses saved. Please add a new address.</p>
@@ -127,11 +113,10 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
           addresses.map(addr => (
             <div
               key={addr._id}
-              className={`p-4 border-2 rounded-lg transition cursor-pointer ${
-                selectedAddress === addr._id
+              className={`p-4 border-2 rounded-lg transition cursor-pointer ${selectedAddress === addr._id
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
-              }`}
+                }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1" onClick={() => onSelectAddress(addr._id)}>
@@ -153,7 +138,7 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
                   </p>
                   <p className="text-sm text-gray-600">{addr.country}</p>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -163,7 +148,7 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
                 <button
                   onClick={() => handleEdit(addr)}
@@ -203,13 +188,13 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
           <h3 className="font-medium text-gray-800 mb-3">
             {editingId ? 'Edit Address' : 'Add New Address'}
           </h3>
-          
+
           <div className="grid md:grid-cols-2 gap-3">
             <input
               type="text"
               placeholder="Full Name *"
               value={formData.fullName}
-              onChange={e => setFormData({...formData, fullName: e.target.value})}
+              onChange={e => setFormData({ ...formData, fullName: e.target.value })}
               required
               className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -217,35 +202,35 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
               type="tel"
               placeholder="Phone Number *"
               value={formData.phoneNumber}
-              onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
+              onChange={e => setFormData({ ...formData, phoneNumber: e.target.value })}
               required
               className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           <input
             type="text"
             placeholder="Address Line 1 *"
             value={formData.addressLine1}
-            onChange={e => setFormData({...formData, addressLine1: e.target.value})}
+            onChange={e => setFormData({ ...formData, addressLine1: e.target.value })}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          
+
           <input
             type="text"
             placeholder="Address Line 2 (Optional)"
             value={formData.addressLine2}
-            onChange={e => setFormData({...formData, addressLine2: e.target.value})}
+            onChange={e => setFormData({ ...formData, addressLine2: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          
+
           <div className="grid grid-cols-3 gap-3">
             <input
               type="text"
               placeholder="City *"
               value={formData.city}
-              onChange={e => setFormData({...formData, city: e.target.value})}
+              onChange={e => setFormData({ ...formData, city: e.target.value })}
               required
               className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -253,7 +238,7 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
               type="text"
               placeholder="State *"
               value={formData.state}
-              onChange={e => setFormData({...formData, state: e.target.value})}
+              onChange={e => setFormData({ ...formData, state: e.target.value })}
               required
               className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -261,33 +246,33 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onRefres
               type="text"
               placeholder="Zip Code *"
               value={formData.zipCode}
-              onChange={e => setFormData({...formData, zipCode: e.target.value})}
+              onChange={e => setFormData({ ...formData, zipCode: e.target.value })}
               required
               className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          
+
           <input
             type="text"
             placeholder="Country"
             value={formData.country}
-            onChange={e => setFormData({...formData, country: e.target.value})}
+            onChange={e => setFormData({ ...formData, country: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.isDefault}
-              onChange={e => setFormData({...formData, isDefault: e.target.checked})}
+              onChange={e => setFormData({ ...formData, isDefault: e.target.checked })}
               className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-gray-700">Set as default address</span>
           </label>
-          
+
           <div className="flex gap-2 pt-2">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition disabled:bg-blue-300 font-medium"
             >

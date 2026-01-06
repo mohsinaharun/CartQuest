@@ -29,11 +29,20 @@ const orderRoutes = require('./routes/order');
 const paymentRoutes = require('./routes/payment');
 
 // Use routes
+// Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/wheel", wheelRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
+
+// New Routes
+app.use("/api/products", require('./routes/products'));
+app.use("/api/cart", require('./routes/cart'));
+app.use("/api/game/guess-price", require('./routes/guessPrice'));
+app.use("/api/categories", require('./routes/categories'));
+app.use("/api/coins", require('./routes/coins'));
+app.use("/api/referrals", require('./routes/referrals'));
 
 // Test route
 app.get("/", (req, res) => {
@@ -43,9 +52,9 @@ app.get("/", (req, res) => {
 // Error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
-    message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined 
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
