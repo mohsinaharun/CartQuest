@@ -13,7 +13,7 @@ const coinTransactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['earned', 'spent', 'referral_bonus', 'purchase_reward'],
+    enum: ['earned', 'spent', 'referral_bonus', 'purchase_reward', 'game_reward'],
     required: true
   },
   description: {

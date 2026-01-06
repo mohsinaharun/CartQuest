@@ -99,16 +99,16 @@ const GuessPricePage = () => {
                             </form>
                         ) : (
                             <div className="text-center space-y-6">
-                                <div className={`p-4 rounded-lg ${result.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                <div className={`p-4 rounded-lg ${result.won ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                     <h4 className="text-lg font-bold mb-1">
-                                        {result.isCorrect ? '🎉 Correct!' : '❌ Missed it!'}
+                                        {result.won ? '🎉 Correct!' : '❌ Missed it!'}
                                     </h4>
                                     <p className="text-sm">
                                         The actual price was <span className="font-bold">${result.actualPrice}</span>
                                     </p>
                                 </div>
 
-                                {result.isCorrect && (
+                                {result.won && (
                                     <div className="animate-bounce text-yellow-500 text-xl font-bold">
                                         +{coinsEarned} Coins Earned!
                                     </div>

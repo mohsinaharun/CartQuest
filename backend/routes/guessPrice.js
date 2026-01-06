@@ -52,9 +52,20 @@ router.post('/submit', auth, async (req, res) => {
             won = true;
             coinsWon = 10; // Fixed reward for now
 
-            // Update User Coins directly
-            await require('../models/User').findByIdAndUpdate(req.user.id, {
+            // Update User Coins and get new balance
+            const User = require('../models/User');
+            const updatedUser = await User.findByIdAndUpdate(req.user.id, {
                 $inc: { coins: coinsWon }
+            }, { new: true });
+
+            // Create Coin Transaction for history and balance tracking
+            const CoinTransaction = require('../models/CoinTransaction');
+            await CoinTransaction.create({
+                userId: req.user.id,
+                amount: coinsWon,
+                type: 'game_reward',
+                description: `Won Guess the Price: ${product.name}`,
+                balanceAfter: updatedUser.coins
             });
         }
 
